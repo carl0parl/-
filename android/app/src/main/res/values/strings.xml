@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Lab Voz y Destreza</string>
+    <string name="title_activity_main">Lab Voz y Destreza</string>
+    <string name="package_name">com.laboratorio.vozdestreza</string>
+    <string name="custom_url_scheme">com.laboratorio.vozdestreza</string>
+</resources>
