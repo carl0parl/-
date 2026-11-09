@@ -46,6 +46,7 @@ export function VoiceWave({ className = '' }: { className?: string }) {
 /** Foco de luz que sigue al puntero/dedo sobre las tarjetas de vidrio. */
 export function useSpotlight() {
   useEffect(() => {
+    if (window.matchMedia?.('(hover: none)').matches) return;
     const onMove = (e: PointerEvent) => {
       const el = (e.target as HTMLElement | null)?.closest?.('[style*="--surface-primary"], [style*="--surface-elevated"]') as HTMLElement | null;
       if (!el) return;

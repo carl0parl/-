@@ -553,6 +553,7 @@ export default function App() {
 
   // Referencias técnicas
   const audioCtxRef = useRef(null);
+  const tickCtxRef = useRef(null);
   const analyserRef = useRef(null);
   const micStreamRef = useRef(null);
   const rafRef = useRef(null);
@@ -730,8 +731,12 @@ export default function App() {
       setMetronomePulse((p) => !p);
       if (audioTickEnabled) {
         try {
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          const ctx = new AudioCtx();
+          if (!tickCtxRef.current) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            tickCtxRef.current = new AudioCtx();
+          }
+          const ctx = tickCtxRef.current;
+          if (ctx.state === 'suspended') ctx.resume();
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = 'sine';
@@ -742,12 +747,13 @@ export default function App() {
           gain.connect(ctx.destination);
           osc.start();
           osc.stop(ctx.currentTime + 0.05);
-          setTimeout(() => ctx.close().catch(() => {}), 80);
         } catch {}
       }
     }, intervalMs);
     return () => clearInterval(interval);
   }, [metronomeRunning, customBpm, audioTickEnabled]);
+
+  useEffect(() => () => { tickCtxRef.current?.close().catch(() => {}); }, []);
 
   // Guardia de Seguridad Neurológica de Mano Izquierda (máx 20 min = 1200s)
   useEffect(() => {
@@ -778,8 +784,14 @@ export default function App() {
       setSimulatedMic(false);
 
       const buffer = new Uint8Array(analyser.frequencyBinCount);
-      const tick = () => {
+      let lastTs = 0;
+      const tick = (ts = 0) => {
         if (!analyserRef.current) return;
+        if (ts - lastTs < 80) {
+          rafRef.current = requestAnimationFrame(tick);
+          return;
+        }
+        lastTs = ts;
         analyserRef.current.getByteTimeDomainData(buffer);
         let sum = 0;
         for (let i = 0; i < buffer.length; i++) {
@@ -792,7 +804,7 @@ export default function App() {
         setDbHistory((prev) => [...prev.slice(1), db]);
         rafRef.current = requestAnimationFrame(tick);
       };
-      tick();
+      rafRef.current = requestAnimationFrame(tick);
     } catch {
       setSimulatedMic(true);
       setMicActive(true);
@@ -1518,10 +1530,10 @@ export default function App() {
           <motion.div
             key={activeNav}
             className="space-y-6 page-stagger"
-            initial={{ opacity: 0, y: 24, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: -12, filter: 'blur(6px)' }}
-            transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           >
           {/* -----------------------------------------------------------------
               VISTA 0: PANEL DE CONTROL, CONFIGURADOR DE SESIÓN Y RUTA
